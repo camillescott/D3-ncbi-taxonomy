@@ -3,49 +3,49 @@
 <style>
 
 .node {
-  cursor: pointer;
+    cursor: pointer;
 }
 
 .node circle {
-  fill: #fff;
-  stroke: steelblue;
-  stroke-width: 1.5px;
+    fill: #fff;
+    stroke: steelblue;
+    stroke-width: 1.5px;
 }
 
 .node text {
-  font: 10px sans-serif;
+    font: 10px sans-serif;
 }
 
 .link {
-  fill: none;
-  stroke: #ccc;
-  stroke-width: 1.5px;
+    fill: none;
+    stroke: #ccc;
+    stroke-width: 1.5px;
 }
 
 </style>
 <head>
-   <title>Interactive NCBI Taxonomic Tree</title>
-   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css')}}"/>
+    <title>Interactive NCBI Taxonomic Tree</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css')}}"/>
 </head>
 <body>
-<div>
-<h1>Interactive NCBI Taxonomic Tree</h1>
-<h2>Camille Scott</h2>
-<p>This visualization is an interactive version of the complete <a href="http://www.ncbi.nlm.nih.gov/taxonomy">NCBI taxonomic tree</a>.
-The code is a bit of a mashup of several dendrogram examples; the result is a collapsible
-circular layout, with nodes sized based on the number of children. <a href="http://flask.pocoo.org/">flask</a>
-is used as a webserver to drive it, which unfortuantely makes it difficult to deliver is
-a self-contained page; instead, I will host it on one of my heroku instances.
-</p>
-<p>
-It could use several improvements that I hope to add in eventually. The layout
-works much better when a fair number of children are expanded, and it would really benefit from 
-a focusing algorithm to dynamically collapse messy areas.
-</p>
-</div>
-<script src="//d3js.org/d3.v3.min.js"></script>
-<script src="{{ url_for('static', filename='biojs-io-newick.min.js')}}"></script>
-<script>
+    <div>
+        <h1>Interactive NCBI Taxonomic Tree</h1>
+        <h2>Camille Scott</h2>
+        <p>This visualization is an interactive version of the complete <a href="http://www.ncbi.nlm.nih.gov/taxonomy">NCBI taxonomic tree</a>.
+        The code is a bit of a mashup of several dendrogram examples; the result is a collapsible
+        circular layout, with nodes sized based on the number of children. <a href="http://flask.pocoo.org/">flask</a>
+        is used as a webserver to drive it, which unfortuantely makes it difficult to deliver is
+        a self-contained page; instead, I will host it on one of my heroku instances.
+        </p>
+        <p>
+        It could use several improvements that I hope to add in eventually. The layout
+        works much better when a fair number of children are expanded, and it would really benefit from 
+        a focusing algorithm to dynamically collapse messy areas.
+        </p>
+    </div>
+    <script src="//d3js.org/d3.v3.min.js"></script>
+    <script src="{{ url_for('static', filename='biojs-io-newick.min.js')}}"></script>
+    <script>
 
 var parser = require("biojs-io-newick");
 
@@ -62,135 +62,146 @@ var tree = d3.layout.tree()
 var diagonal = d3.svg.diagonal.radial()
     .projection(function(d) { return [d.y, d.x / 180 * Math.PI]; });
 
-var svg = d3.select("body").append("svg")
+    var svg = d3.select("body").append("svg")
     .attr("width", diameter)
     .attr("height", diameter - 150)
-  .append("g")
+    .append("g")
     .attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
 
-d3.text("{{ url_for('static', filename='ncbi.nwk') }}", function(error, ncbi_nwk) {
-  if (error) throw error;
+    d3.text("{{ url_for('static', filename='ncbi.nwk') }}", function(error, ncbi_nwk) {
+        if (error) throw error;
 
-  root = parser.parse_newick(ncbi_nwk);
+        root = parser.parse_newick(ncbi_nwk);
 
-  function collapse(d) {
-    if (d.children) {
-      d._children = d.children;
-      d._children.forEach(collapse);
-      d.children = null;
-    }
-  }
+        function count(d) {
+            if (d.children) {
+                d.n_children = d3.sum(d.children.map(count));
+                return d.n_children;
+            } else {
+                d.n_children = 0;
+                return 1;
+            }
+        }
 
-  root.children.forEach(collapse);
-  update(root);
-});
+        function collapse(d) {
+            if (d.children) {
+                d._children = d.children;
+                d._children.forEach(collapse);
+                d.children = null;
+            }
+        }
+        
+        root.children.forEach(count);
+        root.children.forEach(collapse);
+        update(root);
+    });
 
 d3.select(self.frameElement).style("height", "800px");
 
 function update(source) {
 
-  var nodes = tree.nodes(root),
-      links = tree.links(nodes);
+    var nodes = tree.nodes(root),
+    links = tree.links(nodes);
 
-  var node = svg.selectAll("g.node")
-      .data(nodes, function(d) { return d.id || (d.id = ++i); });
+    var node = svg.selectAll("g.node")
+        .data(nodes, function(d) { return d.id || (d.id = ++i); });
 
-  // Enter any new nodes at the parent's previous position.
-  var nodeEnter = node.enter().append("g")
-      .attr("class", "node")
-      .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")";})
-      .on("click", click);
+    // Enter any new nodes at the parent's previous position.
+    var nodeEnter = node.enter().append("g")
+        .attr("class", "node")
+        .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")";})
+        .on("click", click);
 
     // Compute node size based on number of children
-   // Should be recursive for better counts
-  function nodeSizeFunc(d) {
-      if (d._children) {
-        return 50.0 * (d._children.length / (d._children.length + 50));
-      } else if (d.children) {
-        return 25.0 * (d.children.length / (d.children.length + 100));
-      } else {
-        return 5.0;
-      }
-  }
+    // Should be recursive for better counts
+    function nodeSizeFunc(d) {
+        if (d._children) {
+            return 50.0 * (d._children.length / (d._children.length + 50));
+        } else if (d.children) {
+            return 25.0 * (d.children.length / (d.children.length + 100));
+        } else {
+            return 5.0;
+        }
+    }
 
-  nodeEnter.append("circle")
-      .attr("r", 1e-6)
-      .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+    nodeEnter.append("circle")
+        .attr("r", 1e-6)
+        .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
 
-  nodeEnter.append("text")
-      .attr("x", function(d) { return d.children || d._children ? -10 : 10; })
-      .attr("dy", ".35em")
-      .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
-      .text(function(d) { return d.name; })
-      .style("fill-opacity", 1e-6);
+    nodeEnter.append("text")
+        .attr("x", function(d) { return d.children || d._children ? -10 : 10; })
+        .attr("dy", ".35em")
+        .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
+        .text(function(d) { return d.name; })
+        .style("fill-opacity", 1e-6);
 
-  // Transition nodes to their new position.
-  var nodeUpdate = node.transition()
-      .duration(duration)
-      .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")"; });
+    // Transition nodes to their new position.
+    var nodeUpdate = node.transition()
+        .duration(duration)
+        .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")"; });
 
-  nodeUpdate.select("circle")
-      .attr("r", nodeSizeFunc)
-      .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+    nodeUpdate.select("circle")
+        .attr("r", nodeSizeFunc)
+        .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
 
-  nodeUpdate.select("text")
-      .style("fill-opacity", 1);
+    nodeUpdate.select("text")
+        .style("fill-opacity", 1);
 
-  // Transition exiting nodes to the parent's new position.
-  var nodeExit = node.exit().transition()
-      .duration(duration)
-      .attr("transform", function(d) { return "rotate(" + (source.x-90) + "," + source.y + ")"; })
-      .remove();
+    // Transition exiting nodes to the parent's new position.
+    var nodeExit = node.exit().transition()
+        .duration(duration)
+        .attr("transform", function(d) { return "rotate(" + (source.x-90) + "," + source.y + ")"; })
+        .remove();
 
-  nodeExit.select("circle")
-      .attr("r", 1e-6);
+    nodeExit.select("circle")
+        .attr("r", 1e-6);
 
-  nodeExit.select("text")
-      .style("fill-opacity", 1e-6);
+    nodeExit.select("text")
+        .style("fill-opacity", 1e-6);
 
-  // Update the links…
-  var link = svg.selectAll("path.link")
-      .data(links, function(d) { return d.target.id; });
+    // Update the links…
+    var link = svg.selectAll("path.link")
+        .data(links, function(d) { return d.target.id; });
 
-  // Enter any new links at the parent's previous position.
-  link.enter().insert("path", "g")
-      .attr("class", "link")
-      .attr("d", function(d) {
-        var o = {x: source.x0, y: source.y0};
-        return diagonal({source: o, target: o});
-      });
+    // Enter any new links at the parent's previous position.
+    link.enter().insert("path", "g")
+        .attr("class", "link")
+        .attr("d", function(d) {
+            var o = {x: source.x0, y: source.y0};
+            return diagonal({source: o, target: o});
+        });
 
-  // Transition links to their new position.
-  link.transition()
-      .duration(duration)
-      .attr("d", diagonal);
+    // Transition links to their new position.
+    link.transition()
+        .duration(duration)
+        .attr("d", diagonal);
 
-  // Transition exiting nodes to the parent's new position.
-  link.exit().transition()
-      .duration(duration)
-      .attr("d", function(d) {
-        var o = {x: source.x, y: source.y};
-        return diagonal({source: o, target: o});
-      })
-      .remove();
+    // Transition exiting nodes to the parent's new position.
+    link.exit().transition()
+        .duration(duration)
+        .attr("d", function(d) {
+            var o = {x: source.x, y: source.y};
+            return diagonal({source: o, target: o});
+        })
+    .remove();
 
-  // Stash the old positions for transition.
-  nodes.forEach(function(d) {
-    d.x0 = d.x;
-    d.y0 = d.y;
-  });
+    // Stash the old positions for transition.
+    nodes.forEach(function(d) {
+        d.x0 = d.x;
+        d.y0 = d.y;
+    });
 }
 
 // Toggle children on click.
 function click(d) {
-  if (d.children) {
-    d._children = d.children;
-    d.children = null;
-  } else {
-    d.children = d._children;
-    d._children = null;
-  }
-  update(d);
+    if (d.children) {
+        d._children = d.children;
+        d.children = null;
+    } else {
+        d.children = d._children;
+        d._children = null;
+    }
+    update(d);
 }
 
-</script>
+    </script>

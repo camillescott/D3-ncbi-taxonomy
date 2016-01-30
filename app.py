@@ -3,7 +3,7 @@ from flask import render_template
 
 app = Flask(__name__)
 
-@app.route("/ctree1/")
+@app.route("/")
 def ctree1():
     return render_template("collapsible-tree.html")
 

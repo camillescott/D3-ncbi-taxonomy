@@ -63,10 +63,10 @@ var diagonal = d3.svg.diagonal.radial()
     .projection(function(d) { return [d.y, d.x / 180 * Math.PI]; });
 
     var svg = d3.select("body").append("svg")
-    .attr("width", diameter)
-    .attr("height", diameter - 150)
-    .append("g")
-    .attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
+        .attr("width", diameter)
+        .attr("height", diameter - 150)
+        .append("g")
+        .attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
 
     d3.text("{{ url_for('static', filename='ncbi.nwk') }}", function(error, ncbi_nwk) {
         if (error) throw error;
@@ -90,8 +90,8 @@ var diagonal = d3.svg.diagonal.radial()
                 d.children = null;
             }
         }
-        
-        root.children.forEach(count);
+
+        count(root);
         root.children.forEach(collapse);
         update(root);
     });

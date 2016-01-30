@@ -1,12 +1,15 @@
 from flask import Flask
-from flask import render_template
+from flask import render_template, redirect, url_for
 
 app = Flask(__name__)
 
 @app.route("/")
-def ctree1():
+def index():
     return render_template("collapsible-tree.html")
 
+@app.route("/ctree1/")
+def ctree1():
+    return redirect(url_for('index'))
 
 @app.route("/ctree2/")
 def ctree2():

@@ -72,6 +72,7 @@ var diagonal = d3.svg.diagonal.radial()
         if (error) throw error;
 
         root = parser.parse_newick(ncbi_nwk);
+        root.is_root = true;
 
         function count(d) {
             if (d.children) {
@@ -115,12 +116,24 @@ function update(source) {
     // Compute node size based on number of children
     // Should be recursive for better counts
     function nodeSizeFunc(d) {
-        if (d._children) {
+        if (d.is_root) {
+            return 50.0;
+        } else if (d._children) {
             return 50.0 * (d.n_children / (d.n_children + 50));
         } else if (d.children) {
             return 25.0 * (d.n_children / (d.n_children + 100));
         } else {
             return 5.0;
+        }
+    }
+
+    function nodeColorFunc(d) {
+        if (d.is_root) {
+            return "lightcoral";
+        } else if (d.children) {
+            return "#fff";
+        } else {
+            return "lightsteelblue";
         }
     }
 
@@ -142,7 +155,7 @@ function update(source) {
 
     nodeUpdate.select("circle")
         .attr("r", nodeSizeFunc)
-        .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+        .style("fill", nodeColorFunc);
 
     nodeUpdate.select("text")
         .style("fill-opacity", 1);

@@ -43,13 +43,13 @@
         a focusing algorithm to dynamically collapse messy areas.
         </p>
     </div>
-    <script src="//d3js.org/d3.v3.min.js"></script>
-    <script src="{{ url_for('static', filename='biojs-io-newick.min.js')}}"></script>
-    <script>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="{{ url_for('static', filename='biojs-io-newick.min.js')}}"></script>
+<script>
 
 var parser = require("biojs-io-newick");
 
-var diameter = 3000;
+var diameter = 1000;
 
 var i = 0,
     duration = 750,
@@ -58,6 +58,11 @@ var i = 0,
 var tree = d3.layout.tree()
     .size([360, diameter / 2 - 120])
     .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });
+
+
+//var tree = d3.layout.tree()
+//    .nodeSize([200, 200])
+//    .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });
 
 var diagonal = d3.svg.diagonal.radial()
     .projection(function(d) { return [d.y, d.x / 180 * Math.PI]; });
@@ -94,6 +99,8 @@ var diagonal = d3.svg.diagonal.radial()
 
         count(root);
         root.children.forEach(collapse);
+        // Redundant, but simple. We want the base layer of nodes expanded by default.
+        root.children.forEach(expand_children);
         update(root);
     });
 
@@ -205,8 +212,14 @@ function update(source) {
     });
 }
 
-// Toggle children on click.
-function click(d) {
+function expand_children(d) {
+     if (d._children) {
+        d.children = d._children;
+        d._children = null;
+    }
+}
+
+function swap_children(d) {
     if (d.children) {
         d._children = d.children;
         d.children = null;
@@ -214,7 +227,12 @@ function click(d) {
         d.children = d._children;
         d._children = null;
     }
+}
+
+// Toggle children on click.
+function click(d) {
+    swap_children(d);
     update(d);
 }
 
-    </script>
+</script>

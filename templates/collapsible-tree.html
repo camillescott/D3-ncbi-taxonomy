@@ -230,15 +230,15 @@ function update(source) {
     // Color the nodes. For now we just color the root node red.
     function nodeColorFunc(d) {
         if (d == selected_node) {
-            return "yellowgreen";
+            return {"fill": "yellowgreen", "stroke": "green", "stroke-width": "2px"};
         } else if (d.is_root) {
-            return "lightcoral";
+            return {"fill": "lightcoral", "stroke": "red", "stroke-width": "1.5px"};
         } else if (d.children) {
-            return "#fff";
+            return {"fill": "#fff", "stroke": "steelblue", "stroke-width": "1.5px"};
         } else if (d.n_children == 0) {
-            return "mediumpurple";
+            return {"fill": "mediumpurple", "stroke": "purple", "stroke-width": "1.5px"};
         } else {
-            return "lightsteelblue";
+            return {"fill": "lightsteelblue", "stroke": "steelblue", "stroke-width": "1.5px"};
         }
     }
 
@@ -269,7 +269,13 @@ function update(source) {
 
     nodeUpdate.select("circle")
         .attr("r", nodeSizeFunc)
-        .style("fill", nodeColorFunc);
+        .each(function (d) {
+            d3.select(this).style(
+                nodeColorFunc(d)
+            );
+        });
+
+        //.style("fill", nodeColorFunc);
 
     nodeUpdate.select("text")
         .style("fill-opacity", 1);

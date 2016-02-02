@@ -16,6 +16,8 @@ var diagonal = d3.svg.diagonal.radial()
 var svg = d3.select("body").append("svg")
     .attr("width", diameter)
     .attr("height", diameter)
+    .style("border-style", "solid")
+    .style("border-width", "5px")
     .call(d3.behavior.zoom().on("zoom", function () {
         svg.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")}))
     .append("g")

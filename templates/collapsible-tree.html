@@ -71,6 +71,11 @@ var svg = d3.select("body").append("svg")
     .append("g")
     .attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
 
+// Javascript's included mod is stupid
+function mod(n, m) {
+    return ((n % m) + m) % m;
+}
+
 // Remove elements from the end of A and put them on B
 function array_transfer(A, B, n) {
     if (typeof(n) === 'undefined') n = 0;
@@ -103,14 +108,14 @@ function swap_children(d) {
 
 function get_left_sibling(d) {
     if (d.parent) {
-        return d.parent.children[d.parent.children.indexOf(d) - 1];
+        return d.parent.children[mod(d.parent.children.indexOf(d) - 1, d.parent.children.length)];
     }
     return d;
 }
 
 function get_right_sibling(d) {
     if (d.parent) {
-        return d.parent.children[(d.parent.children.indexOf(d) + 1) % d.parent.children.length];
+        return d.parent.children[mod(d.parent.children.indexOf(d) + 1, d.parent.children.length)];
     }
     return d;
 }

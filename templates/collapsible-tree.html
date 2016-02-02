@@ -38,9 +38,10 @@
         a self-contained page; instead, I will host it on one of my heroku instances.
         </p>
         <p>
-        It could use several improvements that I hope to add in eventually. The layout
-        works much better when a fair number of children are expanded, and it would really benefit from 
-        a focusing algorithm to dynamically collapse messy areas.
+        The root node is colored red, while the currently selected node is colored green. The user can select a node either
+        by clicking on it, or by using the w, a, s, and d keys to move between parent/children and siblings. The selected node's
+        children can be expanded with the arrow keys: left and right to collapse and expand 10 children at a time, and up and down
+        to expand or collapse all children.
         </p>
     </div>
 <script src="//d3js.org/d3.v3.min.js"></script>
@@ -59,16 +60,14 @@ var tree = d3.layout.tree()
     .size([360, diameter / 2 - 120])
     .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });
 
-//var tree = d3.layout.tree()
-//    .nodeSize([200, 200])
-//    .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });
-
 var diagonal = d3.svg.diagonal.radial()
     .projection(function(d) { return [d.y, d.x / 180 * Math.PI]; });
 
 var svg = d3.select("body").append("svg")
     .attr("width", diameter)
     .attr("height", diameter)
+    .call(d3.behavior.zoom().on("zoom", function () {
+        svg.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")}))
     .append("g")
     .attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
 
@@ -100,6 +99,27 @@ function swap_children(d) {
     } else {
         expand_children(d);
     }
+}
+
+function get_left_sibling(d) {
+    if (d.parent) {
+        return d.parent.children[d.parent.children.indexOf(d) - 1];
+    }
+    return d;
+}
+
+function get_right_sibling(d) {
+    if (d.parent) {
+        return d.parent.children[(d.parent.children.indexOf(d) + 1) % d.parent.children.length];
+    }
+    return d;
+}
+
+function get_middle_child(d) {
+    if (d.children) {
+        return d.children[Math.round(d.children.length / 2)];
+    }
+    return d;
 }
 
 // Reroot the tree at the given node
@@ -210,6 +230,8 @@ function update(source) {
             return "lightcoral";
         } else if (d.children) {
             return "#fff";
+        } else if (d.n_children == 0) {
+            return "mediumpurple";
         } else {
             return "lightsteelblue";
         }
@@ -296,6 +318,45 @@ function click(d) {
     selected_node = d;
     update(d);
 }
+
+d3.select("body").on("keydown", function() {
+    key = d3.event.keyCode;
+    // "a"
+    if (key == 65) {
+        selected_node = get_left_sibling(selected_node);
+    }
+    // "d"
+    if (key == 68) {
+        selected_node = get_right_sibling(selected_node);
+    }
+    // "w"
+    if (key == 87) {
+        if (selected_node != root) {
+            selected_node = selected_node.parent;
+        }
+    }
+    // "s"
+    if (key == 83) {
+        selected_node = get_middle_child(selected_node);
+    }
+    // right arrow
+    if (key == 39) {
+        expand_children(selected_node, 10);
+    // left arrow
+    } 
+    if (key == 37) {
+        collapse_children(selected_node, 10);
+    // up arrow
+    } 
+    if (key == 38) {
+        expand_children(selected_node);
+    // down arrow
+    } 
+    if (key == 40) {
+        collapse_children(selected_node);
+    }
+    update(selected_node);
+});
 
 // Toggle children on click.
 //function click(d) {

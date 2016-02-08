@@ -20,5 +20,9 @@ def ctree2():
 def cctree():
     return render_template("collapsible-circular.html")
 
+@app.route('/sunburst')
+def sunburst():
+    return render_template('sunburst.html')
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=5000,debug=True)
